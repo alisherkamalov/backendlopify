@@ -5,7 +5,7 @@ import bcrypt from "bcrypt";
 
 export const register = async (req, res) => {
     try {
-      const password = req.body.password;
+      const { nickname, email, password } = req.body;
       const existingUser = await UserModel.findOne({ email: email.trim() });
       if (existingUser) {
         return res.status(400).json({
@@ -29,7 +29,7 @@ export const register = async (req, res) => {
     } catch (err) {
       console.log("Ошибка регистрации:", err);
       res.status(500).json({
-        message: `Не удалось зарегистрироваться в Loopify: ${err}`,
+        message: `Не удалось зарегистрироваться в Loopify: ${err.message}`,
       });
     }
   };
