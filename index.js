@@ -6,53 +6,54 @@ import mongoose from "mongoose";
 import multer from "multer";
 import cors from "cors";
 
+// Подключение к базе данных
 mongoose
   .connect(process.env.MONGO_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 30000, 
+    serverSelectionTimeoutMS: 30000,
     connectTimeoutMS: 30000,
   })
   .then(() => console.log("DATABASE OK"))
   .catch((err) => console.log("error", err));
 
+// Инициализация сервера
 const app = express();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+
 app.use(express.json());
 app.use("/upload", express.static("upload"));
 app.use(cors({
-    origin: ["http://localhost:5252", "https://loopify-five.vercel.app", "http://localhost:3000", "https://backendlopify.vercel.app"],
-    methods: ["POST", "GET", "DELETE", "OPTIONS", "HEAD", "PUT"],
-    allowedHeaders: ["Content-Type", "Authorization"]
+  origin: [
+    "http://localhost:5252", 
+    "https://loopify-five.vercel.app", 
+    "http://localhost:3000", 
+    "https://backendloopify.vercel.app"
+  ],
+  methods: ["POST", "GET", "DELETE", "OPTIONS", "HEAD", "PUT"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
-// Routes...
+
+// Роуты
 app.get("/me", checkAuth, UserController.getMe);
-app.get('/products', checkAuth, ProductController.getAllProducts);
-app.get('/orders', checkAuth, OrderController.getUserOrders)
-app.post(
-  "/login",
-  loginValidation,
-  HandleValidationErrors,
-  UserController.login
-);
-app.post(
-  "/register",
-  registerValidation,
-  HandleValidationErrors,
-  UserController.register
-);
+app.get("/products", checkAuth, ProductController.getAllProducts);
+app.get("/orders", checkAuth, OrderController.getUserOrders);
+
+app.post("/login", loginValidation, HandleValidationErrors, UserController.login);
+app.post("/register", registerValidation, HandleValidationErrors, UserController.register);
+
 app.post(
   "/products",
   checkAuth,
   upload.fields([
     { name: "photo", maxCount: 1 },
-    { name: "video", maxCount: 1 },
+    { name: "video", maxCount: 1 }
   ]),
   ProductController.createProduct
 );
+
 app.post("/orders", checkAuth, OrderController.createOrder);
 app.put("/orders/:orderId/delivered", checkAuth, OrderController.markOrderAsDelivered);
-app.listen(5252, () => {
-  console.log("SERVER OK on port 5252");
-});
+
+export default app;
