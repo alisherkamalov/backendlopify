@@ -8,12 +8,7 @@ import cors from "cors";
 
 // Подключение к базе данных
 mongoose
-  .connect(process.env.MONGO_URL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 30000,
-    connectTimeoutMS: 30000,
-  })
+  .connect(process.env.MONGO_URL)
   .then(() => console.log("DATABASE OK"))
   .catch((err) => console.log("error", err));
 
