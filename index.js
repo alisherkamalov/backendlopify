@@ -7,15 +7,25 @@ import multer from "multer";
 import cors from "cors";
 import dotenv from "dotenv";
 
-dotenv.config(); // Подключение .env для MONGO_URL
+dotenv.config();
+const connectWithRetry = () => {
+  mongoose
+    .connect(process.env.MONGO_URL, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      useFindAndModify: false,
+      useCreateIndex: true,
+    })
+    .then(() => console.log("DATABASE OK"))
+    .catch((err) => {
+      console.error("DATABASE ERROR", err);
+      console.log("❌ Попытка переподключения к базе...");
+      setTimeout(connectWithRetry, 5000);
+    });
+};
 
-// Подключение к базе данных
-mongoose
-  .connect(process.env.MONGO_URL)
-  .then(() => console.log("DATABASE OK"))
-  .catch((err) => console.error("DATABASE ERROR", err));
+connectWithRetry();
 
-// Инициализация сервера
 const app = express();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -60,13 +70,24 @@ app.post(
 app.post("/orders", checkAuth, OrderController.createOrder);
 app.put("/orders/:orderId/delivered", checkAuth, OrderController.markOrderAsDelivered);
 
-// Запуск сервера
 const PORT = process.env.PORT || 4444;
 
-app.listen(PORT, (err) => {
+const server = app.listen(PORT, (err) => {
   if (err) {
     return console.error("SERVER ERROR:", err);
   }
   console.log(`Server running on port ${PORT}`);
 });
+
+const gracefulShutdown = async () => {
+  console.log("⏳ Завершаем работу сервера...");
+  await mongoose.disconnect();
+  server.close(() => {
+    console.log("✅ Сервер и база данных закрыты. Завершение процесса.");
+    process.exit(0);
+  });
+};
+
+process.on("SIGINT", gracefulShutdown);
+process.on("SIGTERM", gracefulShutdown);
 
