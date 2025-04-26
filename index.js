@@ -24,7 +24,7 @@ app.use(cors({
     "http://localhost:5252", 
     "https://loopify-five.vercel.app", 
     "http://localhost:3000", 
-    "https://backendloopify.vercel.app"
+    "backendlopify-production.up.railway.app"
   ],
   methods: ["POST", "GET", "DELETE", "OPTIONS", "HEAD", "PUT"],
   allowedHeaders: ["Content-Type", "Authorization"]
