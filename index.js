@@ -8,13 +8,12 @@ import cors from "cors";
 import dotenv from "dotenv";
 
 dotenv.config();
+
 const connectWithRetry = () => {
   mongoose
     .connect(process.env.MONGO_URL, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      useFindAndModify: false,
-      useCreateIndex: true,
     })
     .then(() => console.log("DATABASE OK"))
     .catch((err) => {
@@ -24,8 +23,10 @@ const connectWithRetry = () => {
     });
 };
 
+// Подключаемся к базе данных
 connectWithRetry();
 
+// Инициализация сервера
 const app = express();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -70,6 +71,7 @@ app.post(
 app.post("/orders", checkAuth, OrderController.createOrder);
 app.put("/orders/:orderId/delivered", checkAuth, OrderController.markOrderAsDelivered);
 
+// Запуск сервера
 const PORT = process.env.PORT || 4444;
 
 const server = app.listen(PORT, (err) => {
@@ -79,6 +81,7 @@ const server = app.listen(PORT, (err) => {
   console.log(`Server running on port ${PORT}`);
 });
 
+// Аккуратное завершение работы приложения
 const gracefulShutdown = async () => {
   console.log("⏳ Завершаем работу сервера...");
   await mongoose.disconnect();
@@ -88,6 +91,8 @@ const gracefulShutdown = async () => {
   });
 };
 
+// Обработка сигналов остановки
 process.on("SIGINT", gracefulShutdown);
 process.on("SIGTERM", gracefulShutdown);
+
 
