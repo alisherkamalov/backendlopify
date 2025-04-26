@@ -1,7 +1,7 @@
 import express from "express";
 import { loginValidation, registerValidation } from "./validators/auth.js";
 import { HandleValidationErrors, checkAuth } from "./utils/index.js";
-import { UserController, OrderController, ProductController } from "./controllers/index.js";
+import { UserController, OrderController, ProductController, CartController } from "./controllers/index.js";
 import mongoose from "mongoose";
 import multer from "multer";
 import cors from "cors";
@@ -23,18 +23,15 @@ const connectWithRetry = () => {
     });
 };
 
-// Подключаемся к базе данных
+// Подключение к базе данных
 connectWithRetry();
 
 // Инициализация сервера
 const app = express();
-const storage = multer.memoryStorage();
 
-// Установка ограничения на размер загружаемых файлов
-const upload = multer({
-  storage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // Максимальный размер файла: 50 MB
-});
+// Хранилище файлов в памяти (без ограничения на размер файла)
+const storage = multer.memoryStorage();
+const upload = multer({ storage }); // Без limits
 
 // Настройки CORS
 const corsOptions = {
@@ -52,9 +49,9 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions)); // Обработка preflight-запросов
 
-// Увеличение лимита для всех POST-запросов
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
+// Без ограничений на размер тела запроса
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.use("/upload", express.static("upload"));
 
@@ -62,7 +59,9 @@ app.use("/upload", express.static("upload"));
 app.get("/me", checkAuth, UserController.getMe);
 app.get("/products", checkAuth, ProductController.getAllProducts);
 app.get("/orders", checkAuth, OrderController.getUserOrders);
-
+app.post('/basket', checkAuth, CartController.addToCart); 
+app.delete('/basket/:productId', checkAuth, CartController.removeFromCart);
+app.get('/basket', checkAuth, CartController.getCartItems);
 app.post("/login", loginValidation, HandleValidationErrors, UserController.login);
 app.post("/register", registerValidation, HandleValidationErrors, UserController.register);
 
@@ -73,12 +72,6 @@ app.post(
     { name: "photo", maxCount: 1 },
     { name: "video", maxCount: 1 },
   ]),
-  (err, req, res, next) => {
-    if (err instanceof multer.MulterError) {
-      return res.status(413).json({ message: "File size exceeds the limit" });
-    }
-    next();
-  },
   ProductController.createProduct
 );
 
@@ -108,4 +101,3 @@ const gracefulShutdown = async () => {
 // Обработка сигналов остановки
 process.on("SIGINT", gracefulShutdown);
 process.on("SIGTERM", gracefulShutdown);
-
