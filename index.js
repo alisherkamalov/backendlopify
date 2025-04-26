@@ -29,7 +29,12 @@ connectWithRetry();
 // Инициализация сервера
 const app = express();
 const storage = multer.memoryStorage();
-const upload = multer({ storage });
+
+// Установка ограничения на размер загружаемых файлов
+const upload = multer({
+  storage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // Максимальный размер файла: 50 MB
+});
 
 // Настройки CORS
 const corsOptions = {
@@ -41,13 +46,16 @@ const corsOptions = {
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
   allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
+  credentials: true,
 };
 
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions)); // Обработка preflight-запросов
 
-app.use(express.json());
+// Увеличение лимита для всех POST-запросов
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
 app.use("/upload", express.static("upload"));
 
 // Роуты
@@ -63,8 +71,14 @@ app.post(
   checkAuth,
   upload.fields([
     { name: "photo", maxCount: 1 },
-    { name: "video", maxCount: 1 }
+    { name: "video", maxCount: 1 },
   ]),
+  (err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+      return res.status(413).json({ message: "File size exceeds the limit" });
+    }
+    next();
+  },
   ProductController.createProduct
 );
 
@@ -94,5 +108,4 @@ const gracefulShutdown = async () => {
 // Обработка сигналов остановки
 process.on("SIGINT", gracefulShutdown);
 process.on("SIGTERM", gracefulShutdown);
-
 
