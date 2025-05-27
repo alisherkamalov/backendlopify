@@ -57,7 +57,7 @@ app.use("/upload", express.static("upload"));
 
 // Роуты
 app.get("/me", checkAuth, UserController.getMe);
-app.get("/products", checkAuth, ProductController.getAllProducts);
+app.get("/products", ProductController.getAllProducts);
 app.get("/orders", checkAuth, OrderController.getUserOrders);
 app.post('/basket', checkAuth, CartController.addToCart); 
 app.delete('/basket/:productId', checkAuth, CartController.removeFromCart);
